@@ -226,3 +226,40 @@ if df_setor.empty:
 
 print(f"Setor escolhido: {store_type_escolhido}")
 print(f"Total de transacoes no setor: {len(df_setor)}")
+
+# Na coluna Product temos mais de um item por transacao; separar e agrupar por item.
+# Objetivo: descobrir qual item do setor escolhido apareceu com maior frequencia.
+if 'Product' in df_setor.columns:
+    itens_por_transacao = (
+        df_setor['Product']
+        .fillna('')
+        .astype(str)
+        .str.split(r'\s*[;,|]\s*', regex=True)
+    )
+
+    itens_explodidos = (
+        itens_por_transacao
+        .explode()
+        .astype(str)
+        .str.strip()
+        .str.strip("[]'\"")
+        .str.strip()
+    )
+    itens_explodidos = itens_explodidos[itens_explodidos != '']
+
+    frequencia_itens = itens_explodidos.value_counts()
+
+    if not frequencia_itens.empty:
+        item_mais_vendido = frequencia_itens.index[0]
+        frequencia_item_mais_vendido = int(frequencia_itens.iloc[0])
+
+        print("\nFrequencia de itens no setor (top 10):")
+        print(frequencia_itens.head(10))
+        print(
+            f"\nItem que mais vendeu no setor {store_type_escolhido}: "
+            f"{item_mais_vendido} ({frequencia_item_mais_vendido} ocorrencias)"
+        )
+    else:
+        print("\nNao foi possivel calcular a frequencia de itens: coluna Product sem valores validos.")
+else:
+    print("\nColuna 'Product' nao encontrada no recorte do setor.")
