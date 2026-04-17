@@ -40,23 +40,35 @@ except Exception as e:
 # plt.tight_layout()
 # plt.show()
 
-# Qual o total de custo por Store_type e qual o % do total de custos?
-total_custo_geral = df['Total_Cost'].sum()
+# # Qual o total de custo por Store_type e qual o % do total de custos?
+# total_custo_geral = df['Total_Cost'].sum()
+# custo_por_loja = df.groupby('Store_Type')['Total_Cost'].sum().sort_values(ascending=False)
+# print("\nTotal de custo por tipo de loja:")
+# print(custo_por_loja)
+# percentual_custo_por_loja = (custo_por_loja / total_custo_geral) * 100
+# print("\nPercentual de custo por tipo de loja:")
+# print(percentual_custo_por_loja.apply(lambda x: f'{x:.2f}%'))
+# # Visualização
+# plt.figure(figsize=(12, 7))
+# sns.barplot(x=custo_por_loja.index, y=custo_por_loja.values, hue=custo_por_loja.index, palette='magma', legend=False)
+# plt.title('Total de Custo por Tipo de Loja')
+# plt.xlabel('Tipo de Loja')
+# plt.ylabel('Total de Custo')
+# plt.xticks(rotation=45)
+# plt.tight_layout()
+# plt.show()
 
-custo_por_loja = df.groupby('Store_Type')['Total_Cost'].sum().sort_values(ascending=False)
-print("\nTotal de custo por tipo de loja:")
-print(custo_por_loja)
-
-percentual_custo_por_loja = (custo_por_loja / total_custo_geral) * 100
-print("\nPercentual de custo por tipo de loja:")
-print(percentual_custo_por_loja.apply(lambda x: f'{x:.2f}%'))
+# Qual método de pagamento é mais usado e qual é menos usado?
+metodo_pagamento = df['Payment_Method'].value_counts()
+print("\nMétodos de pagamento mais e menos usados:")
+print(metodo_pagamento)
 
 # Visualização
-plt.figure(figsize=(12, 7))
-sns.barplot(x=custo_por_loja.index, y=custo_por_loja.values, hue=custo_por_loja.index, palette='magma', legend=False)
-plt.title('Total de Custo por Tipo de Loja')
-plt.xlabel('Tipo de Loja')
-plt.ylabel('Total de Custo')
+plt.figure(figsize=(10, 6))
+sns.barplot(x=metodo_pagamento.index, y=metodo_pagamento.values, palette='cividis')
+plt.title('Frequência dos Métodos de Pagamento')
+plt.xlabel('Método de Pagamento')
+plt.ylabel('Número de Transações')
 plt.xticks(rotation=45)
 plt.tight_layout()
 plt.show()
