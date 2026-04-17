@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import sys
+import os
 
 sns.set_style("whitegrid")
 plt.rcParams['figure.figsize'] = (10, 6)
@@ -312,3 +313,177 @@ if (
     print(item_mais_comprado_por_perfil)
 else: 
     print("\nNao foi possivel calcular o item mais comprado por perfil de cliente.")
+
+# Modelo de Machine Learning - combinacao de itens (Primeira Entrega)
+# Tecnica escolhida: Algoritmo Apriori + regras de associacao.
+try:
+    from ast import literal_eval
+    from mlxtend.frequent_patterns import apriori, association_rules
+
+    if 'Transaction_ID' in df_setor.columns and 'Product' in df_setor.columns:
+        def extrair_itens_produto(valor):
+            if pd.isna(valor):
+                return []
+
+            texto = str(valor).strip()
+            if not texto:
+                return []
+
+            # O dataset costuma vir como lista serializada em texto, ex: "['Milk', 'Bread']".
+            if texto.startswith('[') and texto.endswith(']'):
+                try:
+                    lista = literal_eval(texto)
+                    if isinstance(lista, list):
+                        itens = [str(i).strip().strip("'\"") for i in lista if str(i).strip()]
+                        return [i for i in itens if i]
+                except (ValueError, SyntaxError):
+                    pass
+
+            itens = [p.strip().strip("'\"") for p in texto.split(',') if p.strip()]
+            return [i for i in itens if i]
+
+        transacoes = df_setor[['Transaction_ID', 'Product']].copy()
+        transacoes['Itens'] = transacoes['Product'].apply(extrair_itens_produto)
+        transacoes = transacoes[transacoes['Itens'].map(len) > 0]
+
+        if transacoes.empty:
+            print("\n[Apriori] Nao ha transacoes com itens validos para montar recomendacoes.")
+        else:
+            basket = (
+                transacoes
+                .explode('Itens')
+                .assign(valor=1)
+                .pivot_table(
+                    index='Transaction_ID',
+                    columns='Itens',
+                    values='valor',
+                    aggfunc='max',
+                    fill_value=0,
+                )
+                .astype(bool)
+            )
+
+            itemsets_frequentes = apriori(basket, min_support=0.002, use_colnames=True)
+            regras = association_rules(itemsets_frequentes, metric='confidence', min_threshold=0.05)
+
+            if regras.empty:
+                print("\n[Apriori] Nenhuma regra relevante encontrada com os parametros atuais.")
+            else:
+                regras = regras.sort_values(['lift', 'confidence', 'support'], ascending=False)
+
+                regras_exibicao = regras.copy()
+                regras_exibicao['antecedents'] = regras_exibicao['antecedents'].apply(
+                    lambda x: ', '.join(sorted(list(x)))
+                )
+                regras_exibicao['consequents'] = regras_exibicao['consequents'].apply(
+                    lambda x: ', '.join(sorted(list(x)))
+                )
+
+                colunas_saida = ['antecedents', 'consequents', 'support', 'confidence', 'lift']
+                top10_regras = regras_exibicao[colunas_saida].head(10).copy()
+
+                print("\n[Apriori] Top 10 regras de recomendacao para o setor Warehouse Club:")
+                print(top10_regras.to_string(index=False))
+
+                # Metricas para avaliacao do modelo.
+                total_transacoes = basket.shape[0]
+                total_itens_unicos = basket.shape[1]
+                total_itemsets = len(itemsets_frequentes)
+                total_regras = len(regras)
+                lift_medio = regras['lift'].mean()
+                confianca_media = regras['confidence'].mean()
+                suporte_medio = regras['support'].mean()
+                regras_com_lift_maior_1 = (regras['lift'] > 1).mean() * 100
+
+                itens_recomendacao = set().union(*regras['antecedents']).union(*regras['consequents'])
+                cobertura_itens = (len(itens_recomendacao) / total_itens_unicos) * 100 if total_itens_unicos else 0
+
+                print("\n[Apriori] Justificativa da tecnica escolhida:")
+                print(
+                    "Apriori foi escolhido por ser um metodo classico, interpretavel e adequado "
+                    "para recomendacao baseada em cestas de compra, permitindo identificar "
+                    "itens frequentemente comprados juntos e transformar isso em regras acionaveis."
+                )
+
+                print("\n[Apriori] Metricas de avaliacao do modelo:")
+                print(f"- Total de transacoes analisadas: {total_transacoes}")
+                print(f"- Total de itens unicos: {total_itens_unicos}")
+                print(f"- Itemsets frequentes encontrados: {total_itemsets}")
+                print(f"- Regras de associacao geradas: {total_regras}")
+                print(f"- Suporte medio das regras: {suporte_medio:.4f}")
+                print(f"- Confianca media das regras: {confianca_media:.4f}")
+                print(f"- Lift medio das regras: {lift_medio:.4f}")
+                print(f"- Percentual de regras com lift > 1: {regras_com_lift_maior_1:.2f}%")
+                print(f"- Cobertura de itens nas regras: {cobertura_itens:.2f}%")
+
+                # Elementos visuais (graficos) para analise: salvos em arquivo.
+                saida_dir = 'apriori_outputs'
+                os.makedirs(saida_dir, exist_ok=True)
+
+                # Tabela visual com Top 10 regras de associacao.
+                tabela_visual = top10_regras.copy()
+                tabela_visual['support'] = tabela_visual['support'].map(lambda x: f"{x:.4f}")
+                tabela_visual['confidence'] = tabela_visual['confidence'].map(lambda x: f"{x:.4f}")
+                tabela_visual['lift'] = tabela_visual['lift'].map(lambda x: f"{x:.4f}")
+
+                fig, ax = plt.subplots(figsize=(14, 5.8))
+                ax.axis('off')
+                tabela = ax.table(
+                    cellText=tabela_visual.values,
+                    colLabels=['Antecedente', 'Consequente', 'Support', 'Confidence', 'Lift'],
+                    loc='center',
+                    cellLoc='center',
+                )
+                tabela.auto_set_font_size(False)
+                tabela.set_fontsize(9)
+                tabela.scale(1, 1.35)
+                plt.title('Top 10 Regras de Associacao - Warehouse Club (Apriori)', pad=12)
+                caminho_tabela = os.path.join(saida_dir, 'top10_regras_tabela.png')
+                plt.savefig(caminho_tabela, dpi=150, bbox_inches='tight')
+                plt.close()
+
+                top_regras_grafico = regras_exibicao[colunas_saida].head(10).copy()
+                top_regras_grafico['regra'] = (
+                    top_regras_grafico['antecedents']
+                    + ' -> '
+                    + top_regras_grafico['consequents']
+                )
+                top_regras_grafico = top_regras_grafico.sort_values('lift', ascending=True)
+
+                plt.figure(figsize=(12, 7))
+                plt.barh(top_regras_grafico['regra'], top_regras_grafico['lift'], color='steelblue')
+                plt.title('Top 10 Regras por Lift - Apriori (Warehouse Club)')
+                plt.xlabel('Lift')
+                plt.ylabel('Regra')
+                plt.tight_layout()
+                caminho_lift = os.path.join(saida_dir, 'top_regras_lift.png')
+                plt.savefig(caminho_lift, dpi=150)
+                plt.close()
+
+                plt.figure(figsize=(10, 6))
+                scatter = plt.scatter(
+                    regras['support'],
+                    regras['confidence'],
+                    c=regras['lift'],
+                    cmap='viridis',
+                    alpha=0.7,
+                )
+                plt.colorbar(scatter, label='Lift')
+                plt.title('Suporte vs Confianca das Regras (cor = Lift)')
+                plt.xlabel('Support')
+                plt.ylabel('Confidence')
+                plt.tight_layout()
+                caminho_scatter = os.path.join(saida_dir, 'suporte_confianca_lift.png')
+                plt.savefig(caminho_scatter, dpi=150)
+                plt.close()
+
+                print("\n[Apriori] Graficos salvos:")
+                print(f"- {caminho_tabela}")
+                print(f"- {caminho_lift}")
+                print(f"- {caminho_scatter}")
+    else:
+        print("\n[Apriori] Colunas necessarias nao encontradas: Transaction_ID e/ou Product.")
+except ImportError:
+    print("\n[Apriori] Biblioteca mlxtend nao instalada. Instale com: pip install mlxtend")
+except Exception as e:
+    print(f"\n[Apriori] Erro ao gerar recomendacoes: {e}")
