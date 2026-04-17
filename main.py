@@ -58,17 +58,38 @@ except Exception as e:
 # plt.tight_layout()
 # plt.show()
 
-# Qual método de pagamento é mais usado e qual é menos usado?
-metodo_pagamento = df['Payment_Method'].value_counts()
-print("\nMétodos de pagamento mais e menos usados:")
-print(metodo_pagamento)
+# # Qual método de pagamento é mais usado e qual é menos usado?
+# metodo_pagamento = df['Payment_Method'].value_counts()
+# print("\nMétodos de pagamento mais e menos usados:")
+# print(metodo_pagamento)
+# # Visualização
+# plt.figure(figsize=(10, 6))
+# sns.barplot(x=metodo_pagamento.index, y=metodo_pagamento.values, palette='cividis')
+# plt.title('Frequência dos Métodos de Pagamento')
+# plt.xlabel('Método de Pagamento')
+# plt.ylabel('Número de Transações')
+# plt.xticks(rotation=45)
+# plt.tight_layout()
+# plt.show()
+
+# Qual o método escolhido para as compras mais caras?
+# Agrupar por método de pagamento e somar o Total_Cost para cada um
+compras_mais_caras_por_metodo = df.groupby('Payment_Method')['Total_Cost'].sum().sort_values(ascending=False)
+print("\nMétodo de pagamento para compras mais caras (somatório de Total_Cost):")
+print(compras_mais_caras_por_metodo)
 
 # Visualização
 plt.figure(figsize=(10, 6))
-sns.barplot(x=metodo_pagamento.index, y=metodo_pagamento.values, palette='cividis')
-plt.title('Frequência dos Métodos de Pagamento')
+sns.barplot(
+    x=compras_mais_caras_por_metodo.index,
+    y=compras_mais_caras_por_metodo.values,
+    hue=compras_mais_caras_por_metodo.index,
+    palette='plasma',
+    legend=False,
+)
+plt.title('Método de Pagamento por Valor Total de Vendas')
 plt.xlabel('Método de Pagamento')
-plt.ylabel('Número de Transações')
+plt.ylabel('Valor Total de Vendas (R$)')
 plt.xticks(rotation=45)
 plt.tight_layout()
 plt.show()
