@@ -172,43 +172,57 @@ if 'df' not in locals():
 # else:
 #     print("Não foi possível realizar a análise de vendas por dia da semana devido à falta da coluna 'Date'.")
 
-# O dia e hora com mais venda por cidade?
-if 'Date' in df.columns and 'City' in df.columns:
-    df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
-    df_valid = df.dropna(subset=['Date']).copy()
+# # O dia e hora com mais venda por cidade?
+# if 'Date' in df.columns and 'City' in df.columns:
+#     df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
+#     df_valid = df.dropna(subset=['Date']).copy()
+#
+#     mapa_dias = {
+#         0: 'Segunda-feira',
+#         1: 'Terça-feira',
+#         2: 'Quarta-feira',
+#         3: 'Quinta-feira',
+#         4: 'Sexta-feira',
+#         5: 'Sábado',
+#         6: 'Domingo',
+#     }
+#
+#     df_valid['Hour'] = df_valid['Date'].dt.hour
+#     df_valid['DayOfWeek'] = df_valid['Date'].dt.dayofweek.map(mapa_dias)
+#
+#     vendas_por_cidade_dia_hora = df_valid.groupby(['City', 'DayOfWeek', 'Hour'])['Total_Items'].sum().reset_index()
+#
+#     # Encontrar o dia e hora com mais vendas para cada cidade
+#     idx = vendas_por_cidade_dia_hora.groupby('City')['Total_Items'].idxmax()
+#     melhor_horario_por_cidade = vendas_por_cidade_dia_hora.loc[idx]
+#
+#     print("\nDia e hora com mais vendas por cidade:")
+#     print(melhor_horario_por_cidade)
+#
+#     # Visualização (exemplo para as top N cidades)
+#     top_n_cidades = melhor_horario_por_cidade.nlargest(5, 'Total_Items')  # Top 5 cidades com mais vendas
+#     plt.figure(figsize=(14, 8))
+#     sns.barplot(x='City', y='Total_Items', hue='DayOfWeek', data=top_n_cidades, palette='tab10')
+#     plt.title('Dia e Hora de Pico de Vendas por Cidade (Top 5 Cidades)')
+#     plt.xlabel('Cidade')
+#     plt.ylabel('Quantidade de Itens Vendidos')
+#     plt.xticks(rotation=45)
+#     plt.legend(title='Dia da Semana', bbox_to_anchor=(1.05, 1), loc='upper left')
+#     plt.tight_layout()
+#     plt.show()
+# else:
+#     print("Não foi possível realizar a análise de vendas por cidade, dia e hora devido à falta das colunas 'Date' ou 'City'.")
 
-    mapa_dias = {
-        0: 'Segunda-feira',
-        1: 'Terça-feira',
-        2: 'Quarta-feira',
-        3: 'Quinta-feira',
-        4: 'Sexta-feira',
-        5: 'Sábado',
-        6: 'Domingo',
-    }
+# Setor escolhido para todas as proximas analises.
+store_type_escolhido = 'Warehouse Club'
+df_setor = df[
+    df['Store_Type'].fillna('').str.strip().str.casefold()
+    == store_type_escolhido.casefold()
+].copy()
 
-    df_valid['Hour'] = df_valid['Date'].dt.hour
-    df_valid['DayOfWeek'] = df_valid['Date'].dt.dayofweek.map(mapa_dias)
+if df_setor.empty:
+    print(f"Nenhum registro encontrado para o setor: {store_type_escolhido}")
+    sys.exit(1)
 
-    vendas_por_cidade_dia_hora = df_valid.groupby(['City', 'DayOfWeek', 'Hour'])['Total_Items'].sum().reset_index()
-
-    # Encontrar o dia e hora com mais vendas para cada cidade
-    idx = vendas_por_cidade_dia_hora.groupby('City')['Total_Items'].idxmax()
-    melhor_horario_por_cidade = vendas_por_cidade_dia_hora.loc[idx]
-
-    print("\nDia e hora com mais vendas por cidade:")
-    print(melhor_horario_por_cidade)
-
-    # Visualização (exemplo para as top N cidades)
-    top_n_cidades = melhor_horario_por_cidade.nlargest(5, 'Total_Items')  # Top 5 cidades com mais vendas
-    plt.figure(figsize=(14, 8))
-    sns.barplot(x='City', y='Total_Items', hue='DayOfWeek', data=top_n_cidades, palette='tab10')
-    plt.title('Dia e Hora de Pico de Vendas por Cidade (Top 5 Cidades)')
-    plt.xlabel('Cidade')
-    plt.ylabel('Quantidade de Itens Vendidos')
-    plt.xticks(rotation=45)
-    plt.legend(title='Dia da Semana', bbox_to_anchor=(1.05, 1), loc='upper left')
-    plt.tight_layout()
-    plt.show()
-else:
-    print("Não foi possível realizar a análise de vendas por cidade, dia e hora devido à falta das colunas 'Date' ou 'City'.")
+print(f"Setor escolhido: {store_type_escolhido}")
+print(f"Total de transacoes no setor: {len(df_setor)}")
