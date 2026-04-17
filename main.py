@@ -310,5 +310,5 @@ if (
 
     print("\nItem que cada perfil de cliente compra mais:")
     print(item_mais_comprado_por_perfil)
-else:
+else: 
     print("\nNao foi possivel calcular o item mais comprado por perfil de cliente.")
