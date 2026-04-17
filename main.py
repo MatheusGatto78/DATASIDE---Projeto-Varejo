@@ -121,22 +121,62 @@ if 'df' not in locals():
 #         print(f"Erro ao processar a coluna 'Date' para análise por hora: {e}")
 # else:
 #     print("Coluna 'Date' não encontrada no dataset. Não foi possível realizar a análise de vendas por hora.")
+#
+# # Qual a quantidade de vendas por dia da semana?
+# if 'Date' in df.columns:
+#     # Converte a coluna Date para datetime e remove registros com data invalida.
+#     df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
+#     df_valid = df.dropna(subset=['Date']).copy()
+#
+#     dias_ordenados = [
+#         'Segunda-feira',
+#         'Terça-feira',
+#         'Quarta-feira',
+#         'Quinta-feira',
+#         'Sexta-feira',
+#         'Sábado',
+#         'Domingo',
+#     ]
+#     mapa_dias = {
+#         0: 'Segunda-feira',
+#         1: 'Terça-feira',
+#         2: 'Quarta-feira',
+#         3: 'Quinta-feira',
+#         4: 'Sexta-feira',
+#         5: 'Sábado',
+#         6: 'Domingo',
+#     }
+#
+#     df_valid['DayOfWeek'] = df_valid['Date'].dt.dayofweek.map(mapa_dias)
+#     df_valid['DayOfWeek'] = pd.Categorical(df_valid['DayOfWeek'], categories=dias_ordenados, ordered=True)
+#
+#     vendas_por_dia_semana = df_valid.groupby('DayOfWeek')['Total_Items'].sum().reindex(dias_ordenados, fill_value=0)
+#     print("\nQuantidade de vendas por dia da semana:")
+#     print(vendas_por_dia_semana)
+#
+#     # Visualização
+#     plt.figure(figsize=(12, 7))
+#     sns.barplot(
+#         x=vendas_por_dia_semana.index,
+#         y=vendas_por_dia_semana.values,
+#         hue=vendas_por_dia_semana.index,
+#         palette='coolwarm',
+#         legend=False,
+#     )
+#     plt.title('Quantidade de Vendas por Dia da Semana')
+#     plt.xlabel('Dia da Semana')
+#     plt.ylabel('Quantidade de Itens Vendidos')
+#     plt.xticks(rotation=45)
+#     plt.tight_layout()
+#     plt.show()
+# else:
+#     print("Não foi possível realizar a análise de vendas por dia da semana devido à falta da coluna 'Date'.")
 
-# Qual a quantidade de vendas por dia da semana?
-if 'Date' in df.columns:
-    # Converte a coluna Date para datetime e remove registros com data invalida.
+# O dia e hora com mais venda por cidade?
+if 'Date' in df.columns and 'City' in df.columns:
     df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
     df_valid = df.dropna(subset=['Date']).copy()
 
-    dias_ordenados = [
-        'Segunda-feira',
-        'Terça-feira',
-        'Quarta-feira',
-        'Quinta-feira',
-        'Sexta-feira',
-        'Sábado',
-        'Domingo',
-    ]
     mapa_dias = {
         0: 'Segunda-feira',
         1: 'Terça-feira',
@@ -147,27 +187,28 @@ if 'Date' in df.columns:
         6: 'Domingo',
     }
 
+    df_valid['Hour'] = df_valid['Date'].dt.hour
     df_valid['DayOfWeek'] = df_valid['Date'].dt.dayofweek.map(mapa_dias)
-    df_valid['DayOfWeek'] = pd.Categorical(df_valid['DayOfWeek'], categories=dias_ordenados, ordered=True)
 
-    vendas_por_dia_semana = df_valid.groupby('DayOfWeek')['Total_Items'].sum().reindex(dias_ordenados, fill_value=0)
-    print("\nQuantidade de vendas por dia da semana:")
-    print(vendas_por_dia_semana)
+    vendas_por_cidade_dia_hora = df_valid.groupby(['City', 'DayOfWeek', 'Hour'])['Total_Items'].sum().reset_index()
 
-    # Visualização
-    plt.figure(figsize=(12, 7))
-    sns.barplot(
-        x=vendas_por_dia_semana.index,
-        y=vendas_por_dia_semana.values,
-        hue=vendas_por_dia_semana.index,
-        palette='coolwarm',
-        legend=False,
-    )
-    plt.title('Quantidade de Vendas por Dia da Semana')
-    plt.xlabel('Dia da Semana')
+    # Encontrar o dia e hora com mais vendas para cada cidade
+    idx = vendas_por_cidade_dia_hora.groupby('City')['Total_Items'].idxmax()
+    melhor_horario_por_cidade = vendas_por_cidade_dia_hora.loc[idx]
+
+    print("\nDia e hora com mais vendas por cidade:")
+    print(melhor_horario_por_cidade)
+
+    # Visualização (exemplo para as top N cidades)
+    top_n_cidades = melhor_horario_por_cidade.nlargest(5, 'Total_Items')  # Top 5 cidades com mais vendas
+    plt.figure(figsize=(14, 8))
+    sns.barplot(x='City', y='Total_Items', hue='DayOfWeek', data=top_n_cidades, palette='tab10')
+    plt.title('Dia e Hora de Pico de Vendas por Cidade (Top 5 Cidades)')
+    plt.xlabel('Cidade')
     plt.ylabel('Quantidade de Itens Vendidos')
     plt.xticks(rotation=45)
+    plt.legend(title='Dia da Semana', bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
     plt.show()
 else:
-    print("Não foi possível realizar a análise de vendas por dia da semana devido à falta da coluna 'Date'.")
+    print("Não foi possível realizar a análise de vendas por cidade, dia e hora devido à falta das colunas 'Date' ou 'City'.")
