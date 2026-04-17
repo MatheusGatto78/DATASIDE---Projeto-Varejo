@@ -263,3 +263,52 @@ if 'Product' in df_setor.columns:
         print("\nNao foi possivel calcular a frequencia de itens: coluna Product sem valores validos.")
 else:
     print("\nColuna 'Product' nao encontrada no recorte do setor.")
+
+# Qual item no setor vendeu menos (apareceu com menos frequencia)?
+if 'frequencia_itens' in locals() and not frequencia_itens.empty:
+    menor_frequencia = int(frequencia_itens.min())
+    itens_menos_vendidos = frequencia_itens[frequencia_itens == menor_frequencia].sort_index()
+
+    print("\nItem(ns) que vendeu(ram) menos no setor:")
+    print(itens_menos_vendidos)
+else:
+    print("\nNao foi possivel identificar o item menos vendido no setor.")
+
+# Qual item cada perfil de cliente compra mais?
+if (
+    'itens_explodidos' in locals()
+    and not itens_explodidos.empty
+    and 'Customer_Category' in df_setor.columns
+):
+    itens_por_perfil = pd.DataFrame(
+        {
+            'Customer_Category': df_setor.loc[itens_explodidos.index, 'Customer_Category'].astype(str),
+            'Item': itens_explodidos.values,
+        }
+    )
+
+    itens_por_perfil['Customer_Category'] = itens_por_perfil['Customer_Category'].str.strip()
+    itens_por_perfil['Item'] = itens_por_perfil['Item'].astype(str).str.strip()
+    itens_por_perfil = itens_por_perfil[
+        (itens_por_perfil['Customer_Category'] != '')
+        & (itens_por_perfil['Item'] != '')
+    ]
+
+    contagem_perfil_item = (
+        itens_por_perfil
+        .groupby(['Customer_Category', 'Item'])
+        .size()
+        .reset_index(name='Frequencia')
+    )
+
+    idx_top_item_perfil = contagem_perfil_item.groupby('Customer_Category')['Frequencia'].idxmax()
+    item_mais_comprado_por_perfil = (
+        contagem_perfil_item.loc[idx_top_item_perfil]
+        .sort_values('Customer_Category')
+        .reset_index(drop=True)
+    )
+
+    print("\nItem que cada perfil de cliente compra mais:")
+    print(item_mais_comprado_por_perfil)
+else:
+    print("\nNao foi possivel calcular o item mais comprado por perfil de cliente.")
