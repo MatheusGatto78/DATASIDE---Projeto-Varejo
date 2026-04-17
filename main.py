@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import sys
 
 sns.set_style("whitegrid")
 plt.rcParams['figure.figsize'] = (10, 6)
@@ -11,6 +12,9 @@ except FileNotFoundError:
     print("Erro: O arquivo 'Retail_Transactions_Dataset.csv' não foi encontrado. Certifique-se de que o arquivo está no diretório correto.")
 except Exception as e:
     print(f"Ocorreu um erro ao carregar o dataset: {e}")
+
+if 'df' not in locals():
+    sys.exit(1)
 
 # #  Qual o total de itens vendidos (somar a quantidade de todos os itens)?
 # total_itens_vendidos = df['Total_Items'].sum()
@@ -93,27 +97,77 @@ except Exception as e:
 # plt.tight_layout()
 # plt.show()
 
-# Qual a quantidade de vendas por hora?
+# # Qual a quantidade de vendas por hora?
+# if 'Date' in df.columns:
+#     try:
+#         df['Date'] = pd.to_datetime(df['Date'])
+#         df['Hour'] = df['Date'].dt.hour
+#         print("Coluna 'Hour' criada a partir da coluna 'Date'.")
+#
+#         vendas_por_hora = df.groupby('Hour')['Total_Items'].sum()
+#         print("\nQuantidade de vendas por hora:")
+#         print(vendas_por_hora)
+#
+#         # Visualização
+#         plt.figure(figsize=(12, 7))
+#         sns.lineplot(x=vendas_por_hora.index, y=vendas_por_hora.values, marker='o')
+#         plt.title('Quantidade de Vendas por Hora do Dia')
+#         plt.xlabel('Hora do Dia')
+#         plt.ylabel('Quantidade de Itens Vendidos')
+#         plt.xticks(range(0, 24))
+#         plt.tight_layout()
+#         plt.show()
+#     except Exception as e:
+#         print(f"Erro ao processar a coluna 'Date' para análise por hora: {e}")
+# else:
+#     print("Coluna 'Date' não encontrada no dataset. Não foi possível realizar a análise de vendas por hora.")
+
+# Qual a quantidade de vendas por dia da semana?
 if 'Date' in df.columns:
-    try:
-        df['Date'] = pd.to_datetime(df['Date'])
-        df['Hour'] = df['Date'].dt.hour
-        print("Coluna 'Hour' criada a partir da coluna 'Date'.")
+    # Converte a coluna Date para datetime e remove registros com data invalida.
+    df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
+    df_valid = df.dropna(subset=['Date']).copy()
 
-        vendas_por_hora = df.groupby('Hour')['Total_Items'].sum()
-        print("\nQuantidade de vendas por hora:")
-        print(vendas_por_hora)
+    dias_ordenados = [
+        'Segunda-feira',
+        'Terça-feira',
+        'Quarta-feira',
+        'Quinta-feira',
+        'Sexta-feira',
+        'Sábado',
+        'Domingo',
+    ]
+    mapa_dias = {
+        0: 'Segunda-feira',
+        1: 'Terça-feira',
+        2: 'Quarta-feira',
+        3: 'Quinta-feira',
+        4: 'Sexta-feira',
+        5: 'Sábado',
+        6: 'Domingo',
+    }
 
-        # Visualização
-        plt.figure(figsize=(12, 7))
-        sns.lineplot(x=vendas_por_hora.index, y=vendas_por_hora.values, marker='o')
-        plt.title('Quantidade de Vendas por Hora do Dia')
-        plt.xlabel('Hora do Dia')
-        plt.ylabel('Quantidade de Itens Vendidos')
-        plt.xticks(range(0, 24))
-        plt.tight_layout()
-        plt.show()
-    except Exception as e:
-        print(f"Erro ao processar a coluna 'Date' para análise por hora: {e}")
+    df_valid['DayOfWeek'] = df_valid['Date'].dt.dayofweek.map(mapa_dias)
+    df_valid['DayOfWeek'] = pd.Categorical(df_valid['DayOfWeek'], categories=dias_ordenados, ordered=True)
+
+    vendas_por_dia_semana = df_valid.groupby('DayOfWeek')['Total_Items'].sum().reindex(dias_ordenados, fill_value=0)
+    print("\nQuantidade de vendas por dia da semana:")
+    print(vendas_por_dia_semana)
+
+    # Visualização
+    plt.figure(figsize=(12, 7))
+    sns.barplot(
+        x=vendas_por_dia_semana.index,
+        y=vendas_por_dia_semana.values,
+        hue=vendas_por_dia_semana.index,
+        palette='coolwarm',
+        legend=False,
+    )
+    plt.title('Quantidade de Vendas por Dia da Semana')
+    plt.xlabel('Dia da Semana')
+    plt.ylabel('Quantidade de Itens Vendidos')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
 else:
-    print("Coluna 'Date' não encontrada no dataset. Não foi possível realizar a análise de vendas por hora.")
+    print("Não foi possível realizar a análise de vendas por dia da semana devido à falta da coluna 'Date'.")
