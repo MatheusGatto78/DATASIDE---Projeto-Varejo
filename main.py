@@ -72,24 +72,48 @@ except Exception as e:
 # plt.tight_layout()
 # plt.show()
 
-# Qual o método escolhido para as compras mais caras?
-# Agrupar por método de pagamento e somar o Total_Cost para cada um
-compras_mais_caras_por_metodo = df.groupby('Payment_Method')['Total_Cost'].sum().sort_values(ascending=False)
-print("\nMétodo de pagamento para compras mais caras (somatório de Total_Cost):")
-print(compras_mais_caras_por_metodo)
+# # Qual o método escolhido para as compras mais caras?
+# # Agrupar por método de pagamento e somar o Total_Cost para cada um
+# compras_mais_caras_por_metodo = df.groupby('Payment_Method')['Total_Cost'].sum().sort_values(ascending=False)
+# print("\nMétodo de pagamento para compras mais caras (somatório de Total_Cost):")
+# print(compras_mais_caras_por_metodo)
+# # Visualização
+# plt.figure(figsize=(10, 6))
+# sns.barplot(
+#     x=compras_mais_caras_por_metodo.index,
+#     y=compras_mais_caras_por_metodo.values,
+#     hue=compras_mais_caras_por_metodo.index,
+#     palette='plasma',
+#     legend=False,
+# )
+# plt.title('Método de Pagamento por Valor Total de Vendas')
+# plt.xlabel('Método de Pagamento')
+# plt.ylabel('Valor Total de Vendas (R$)')
+# plt.xticks(rotation=45)
+# plt.tight_layout()
+# plt.show()
 
-# Visualização
-plt.figure(figsize=(10, 6))
-sns.barplot(
-    x=compras_mais_caras_por_metodo.index,
-    y=compras_mais_caras_por_metodo.values,
-    hue=compras_mais_caras_por_metodo.index,
-    palette='plasma',
-    legend=False,
-)
-plt.title('Método de Pagamento por Valor Total de Vendas')
-plt.xlabel('Método de Pagamento')
-plt.ylabel('Valor Total de Vendas (R$)')
-plt.xticks(rotation=45)
-plt.tight_layout()
-plt.show()
+# Qual a quantidade de vendas por hora?
+if 'Date' in df.columns:
+    try:
+        df['Date'] = pd.to_datetime(df['Date'])
+        df['Hour'] = df['Date'].dt.hour
+        print("Coluna 'Hour' criada a partir da coluna 'Date'.")
+
+        vendas_por_hora = df.groupby('Hour')['Total_Items'].sum()
+        print("\nQuantidade de vendas por hora:")
+        print(vendas_por_hora)
+
+        # Visualização
+        plt.figure(figsize=(12, 7))
+        sns.lineplot(x=vendas_por_hora.index, y=vendas_por_hora.values, marker='o')
+        plt.title('Quantidade de Vendas por Hora do Dia')
+        plt.xlabel('Hora do Dia')
+        plt.ylabel('Quantidade de Itens Vendidos')
+        plt.xticks(range(0, 24))
+        plt.tight_layout()
+        plt.show()
+    except Exception as e:
+        print(f"Erro ao processar a coluna 'Date' para análise por hora: {e}")
+else:
+    print("Coluna 'Date' não encontrada no dataset. Não foi possível realizar a análise de vendas por hora.")
